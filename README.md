@@ -172,6 +172,3 @@ Stores (state, action, reward, next_state, done) tuples and samples randomly to 
 
 Created for **Principles of Autonomy and Decision Making** course at THI.
 
-## 📄 License
-
-This project is for educational purposes.
