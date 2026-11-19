@@ -54,7 +54,7 @@ if train_dqn:
 
     for n_epi in range(num_episodes):
         # Epsilon decay (Please come up with your own logic)
-        epsilon = max(0.01, 1 - 0.99*(n_epi/num_episodes))  # Linear annealing from 8% to 1%
+        epsilon = max(0.01, 1 - 0.99*(n_epi/num_episodes))  # Linear annealing from 100% to 1%
 
         s, _ = env.reset()
         done = False

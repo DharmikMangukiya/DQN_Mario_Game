@@ -2,18 +2,21 @@ import sys
 import pygame
 import numpy as np
 import gymnasium as gym
+import os
+
+ASSET_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "Photos")
 
 # Step 0: Import images for the environment
 # -------
 # Paths to your images
-agent1_img_path = r'Photos\Mario.png'
-agent2_img_path = r'Photos\SuperMario.png'
-goal_img_path = r"Photos\Goal_.png"
-obstacle_img_path = r'Photos\Bomb_.png'
-background_img_path = r'Photos\Brick_.png'
-wall_img_path = r'Photos\Fence_.png'
-hell_img_path = r'Photos\Radiator_.png'
-food_img_path = r'Photos\Food_.png'
+agent1_img_path = os.path.join(ASSET_DIR, "Mario.png")
+agent2_img_path = os.path.join(ASSET_DIR, "SuperMario.png")
+goal_img_path = os.path.join(ASSET_DIR, "Goal_.png")
+obstacle_img_path = os.path.join(ASSET_DIR, "Bomb_.png")
+background_img_path = os.path.join(ASSET_DIR, "Brick_.png")
+wall_img_path = os.path.join(ASSET_DIR, "Fence_.png")
+hell_img_path = os.path.join(ASSET_DIR, "Radiator_.png")
+food_img_path = os.path.join(ASSET_DIR, "Food_.png")
 
 # Step 1: Define your own custom environment
 # -------
@@ -22,7 +25,7 @@ class PadmEnv(gym.Env):
         Initializes the custom environment for a grid-based game using Gymnasium and Pygame.
 
         Game Details:
-        - The grid is 8x8 in size. The agent begins at position (1,0) and aims to reach the primary goal at position (7,8).
+        - The grid is 9x9 in size. The agent begins at position (1,0) and aims to reach the primary goal at position (7,8).
         - Each cell in the grid can be a safe spot, contain foods (reward state), bomb (obstacle states), hell state.
 
         Parameters:

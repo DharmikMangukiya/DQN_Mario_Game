@@ -1,174 +1,92 @@
-# 🎮 DQN Mario Game - Reinforcement Learning Project
+# DQN Mario Grid World
 
-A **Deep Q-Network (DQN)** implementation for training an agent to navigate grid-based environments using reinforcement learning. Built with PyTorch and Pygame.
+A Deep Q-Network (DQN) agent trained to navigate a Mario-themed grid world, built with **PyTorch**, **Gymnasium** and **Pygame**.
+Course project for *Principles of Autonomy and Decision Making* at Technische Hochschule Ingolstadt (THI).
 
-![Training Curve](training_curve_dhm1382.png)
+![9x9 Super Mario environment](Result/environment_9x9_overview.png)
 
-## 🎯 Project Overview
+## What's in this repo
 
-This project implements a DQN agent that learns to play a Mario-themed grid game. The agent must:
-- Navigate from start to goal
-- Collect food for bonus rewards
-- Avoid bombs (obstacles) and radiators (hell states)
-- Learn optimal paths through experience
+| Part | Description |
+|---|---|
+| Two custom Gymnasium environments | A 6×6 training grid and a full 9×9 "Super Mario" grid with walls, bombs, hell states and power-ups |
+| DQN agent | MLP Q-network, target network, experience replay, ε-greedy exploration |
+| Manual play mode | Drive Mario with the arrow keys to check the environment dynamics and rewards |
+| Results | Training curves, a trained-agent demo and manual-play demos in [`Result/`](Result) |
 
-## 🧠 What is Deep Q-Learning?
-
-**Q-Learning** is a reinforcement learning algorithm that learns the optimal action-value function Q(s,a) - the expected reward for taking action `a` in state `s`.
-
-**Deep Q-Network (DQN)** uses a neural network to approximate Q-values, enabling learning in large state spaces.
-
-### Key Components:
-1. **Q-Network**: Neural network that predicts Q-values for all actions
-2. **Target Network**: Stabilizes training by providing fixed targets
-3. **Experience Replay**: Stores past experiences and samples randomly for training
-4. **Epsilon-Greedy**: Balances exploration vs exploitation
-
-## 🗂️ Project Structure
+## Project structure
 
 ```
-├── DQN_model.py       # Neural network architecture
-├── utils.py           # Replay buffer & training function
-├── main.py            # Training script for 6x6 environment
-├── main_dhm1382.py    # Training script for 9x9 environment
-├── padm_env.py        # 6x6 grid environment
-├── env_dhm1382.py     # 9x9 Super Mario environment
-├── Photos/            # Game images (Mario, Goal, Bomb, etc.)
-├── dqn.pth            # Trained model weights (6x6)
-├── dqn_dhm1382.pth    # Trained model weights (9x9)
-└── training_curve.png # Training results visualization
+├── DQN_model.py        # Q-network (2 → 128 → 128 → 4) + ε-greedy action selection
+├── utils.py            # Replay buffer and DQN update step
+├── padm_env.py         # 6×6 environment (used for DQN training)
+├── env_dhm1382.py      # 9×9 Super Mario environment (manual play + rendering)
+├── main.py             # Train / test DQN on the 6×6 environment
+├── main_dhm1382.py     # Train / test DQN on the 9×9 environment
+├── Photos/             # Sprites
+└── Result/             # Demo videos, environment overview, console output
 ```
 
-## 🎲 Environments
+## Environments
 
-### Environment 1: Simple Grid (6x6)
-- **Grid Size**: 6×6
-- **Start**: (0, 0)
-- **Goal**: (5, 5)
-- **Obstacles**: Bombs at various positions
-- **Rewards**: Goal (+100), Bomb (-50), Step (-0.1), Food (+10)
+| | 6×6 grid (`padm_env.py`) | 9×9 Super Mario (`env_dhm1382.py`) |
+|---|---|---|
+| Start → Goal | (0, 0) → (5, 5) | (1, 0) → (7, 8) |
+| Terminal failure | 4 bombs | 1 hell state (radiator) |
+| Other elements | 3 food items | Walls, 4 bombs, 4 power-ups (Mario → Super Mario) |
+| Rewards | Goal +100 · bomb −50 · food +10 (−1 if revisited) | Goal +10 · hell/bomb −5 · power-up +5 · safe step +1 |
+| Purpose | DQN training | Visual validation, manual play |
 
-### Environment 2: Super Mario (9x9)
-- **Grid Size**: 9×9
-- **Start**: (1, 0)
-- **Goal**: (7, 8)
-- **Features**: Walls, obstacles, hell states, food power-ups
-- **Super Mario Mode**: Collecting food transforms Mario!
-- **Rewards**: Goal (+10), Hell (-5), Obstacle (-5), Step (+1), Food (+5)
+**Why two environments?** The 9×9 world renders every step with Pygame, which makes it slow to train in. The 6×6 grid keeps the same state/action interface (state = (row, col), 4 actions) but is small enough to run thousands of episodes, so it is the main DQN training environment.
 
-## 🧩 Design Decisions: Two Environments
+## Method
 
-This project intentionally uses **two different grid-world environments**, each designed for a specific purpose.
+- **Q-network:** `Linear(2,128) → ReLU → Linear(128,128) → ReLU → Linear(128,4)`; input is the agent's (row, col) position, output is one Q-value per action (Up, Down, Right, Left).
+- **Target network:** a copy of the Q-network, synced every 10 episodes, to stabilise the TD target.
+- **Experience replay:** buffer of 50,000 transitions; training starts after 500 samples, 10 mini-batch updates per episode.
+- **Loss:** Smooth L1 (Huber) on `r + γ · max_a' Q_target(s', a')`, with gradient clipping (max norm 1.0).
+- **Exploration:** linear ε decay `ε = max(0.01, 1 − 0.99 · episode / N)`, from 1.0 down to 0.01.
 
-### 🔹 1. 9×9 Super Mario Environment (Manual Agent)
+| Hyperparameter | Value |
+|---|---|
+| Optimizer / learning rate | Adam / 0.01 |
+| Discount γ | 0.98 |
+| Batch size | 32 |
+| Episodes / max steps | 3,000 / 100 (6×6), 200 (9×9) |
 
-The **9×9 environment** is the full-featured Super Mario grid world and includes:
-- Walls that restrict movement
-- Bombs (obstacles)
-- Hell states (terminal failure)
-- Food power-ups (Mario → Super Mario)
-- Pygame-based visual rendering
+The DQN training loop is adapted from [minimalRL](https://github.com/seungeunrho/minimalRL/blob/master/dqn.py); the environments, reward design and experiments are my own.
 
-📌 **Purpose**  
-This environment is primarily used for:
-- Manual control and visualization
-- Verifying environment dynamics
-- Debugging reward logic and state transitions
-- Demonstrating correct behavior step-by-step
+## Results
 
-Because rendering is enabled at every step, this environment is **not ideal for fast learning**, but it is excellent for **human validation and explanation**.
+**6×6 environment, 3,000 episodes:**
 
----
+![Training curve 6x6](training_curve.png)
 
-### 🔹 2. 6×6 Simplified Environment (Q-Learning / DQN)
+- The agent reaches the goal (+100) regularly while exploration is high (ε > ~0.15), so the environment and reward signal work.
+- The **greedy policy did not converge**: the 50-episode moving average stays between about −40 and 0, and once ε is low the agent mostly ends episodes in a bomb or by timing out.
+- A demo of the trained agent is in [`Result/dqn_agent_6x6_demo.mp4`](Result/dqn_agent_6x6_demo.mp4).
 
-The **6×6 environment** is a simplified version of the grid world and is used for training the learning agent.
+**9×9 environment:** mainly used for manual play and validation ([`Result/manual_agent_9x9_demo.mp4`](Result/manual_agent_9x9_demo.mp4)). Its +1 reward for every safe step lets the agent collect more reward by wandering than by finishing (goal = +10), so it is not yet suited to DQN training.
 
-Key simplifications:
-- Smaller grid size
-- Fewer obstacles
-- No complex wall structures
-- Minimal or no rendering during training
+### Lessons learned / next steps
 
-📌 **Reason for Simplification**  
-Rendering the environment at every time step significantly slows down the learning process and negatively affects exploration and exploitation.  
-To ensure efficient training, the learning agent is trained in a **simpler, faster environment**.
+- **Reward shaping:** in the 9×9 world, use a small step *penalty* instead of +1 so reaching the goal is the best strategy.
+- **Markov state:** the food reward depends on which items have been collected, but the state is only (row, col). Adding "collected" flags to the observation should make the problem learnable.
+- **Stability:** normalise the state to [0, 1], lower the learning rate (e.g. 1e-3), and update the network every step rather than once per episode.
+- **Evaluation:** report success rate and average path length over test episodes instead of only the training reward.
 
-This allows the agent to:
-- Explore more episodes in less time
-- Converge faster to an optimal policy
-- Focus on learning decision-making rather than visualization
+## How to run
 
----
-
-### 🧠 Key Insight
-
-The **same learning logic** is used for both environments, but:
-- The **9×9 grid** is used for demonstration and validation
-- The **6×6 grid** is used for efficient reinforcement learning
-
-This separation improves both **clarity** and **training performance**.
-## 🚀 How to Run
-
-### Prerequisites
 ```bash
 pip install torch gymnasium pygame numpy matplotlib
+
+python main.py            # train DQN on the 6×6 grid
+python main_dhm1382.py    # train DQN on the 9×9 grid
+python env_dhm1382.py     # play the 9×9 world manually with the arrow keys
 ```
 
-### Training
-```bash
-# Train on 6x6 environment
-python main.py
+To test a trained model, set `train_dqn = False` and `test_dqn = True` at the top of the main file. Training saves the weights as `dqn.pth` / `dqn_dhm1382.pth` (not included in the repo). Set `render = False` for much faster training.
 
-# Train on 9x9 Super Mario environment
-python main_dhm1382.py
-```
+## Author
 
-### Play Manually (9x9 Environment)
-```bash
-python env_dhm1382.py
-```
-Use arrow keys to control Mario!
-
-### Test Trained Model
-Set `test_dqn = True` and `train_dqn = False` in the main files.
-
-## 📊 Training Results
-
-The agent learns to navigate efficiently over ~3000 episodes:
-- **Early Training**: Random exploration, negative rewards
-- **Mid Training**: Starts finding goal occasionally
-- **Late Training**: Consistently reaches goal efficiently
-
-## 🧪 Hyperparameters
-
-| Parameter | Value |
-|-----------|-------|
-| Learning Rate | 0.01 |
-| Gamma (Discount) | 0.98 |
-| Buffer Size | 50,000 |
-| Batch Size | 32 |
-| Epsilon Decay | 1.0 → 0.01 |
-
-## 🔧 Key Implementation Details
-
-### Neural Network (DQN_model.py)
-```python
-Input(2) → Linear(128) → ReLU → Linear(128) → ReLU → Linear(4)
-```
-- Input: 2D state (x, y coordinates)
-- Output: Q-values for 4 actions (Up, Down, Right, Left)
-
-### Epsilon-Greedy Exploration
-```python
-epsilon = max(0.01, 1 - 0.99*(episode/total_episodes))
-```
-Starts with 100% exploration, decays to 1% over training.
-
-### Experience Replay
-Stores (state, action, reward, next_state, done) tuples and samples randomly to break correlation between consecutive samples.
-
-## 📝 Author
-
-Created for **Principles of Autonomy and Decision Making** course at THI.
-
+**Dharmik Mangukiya** · Master's student, AI Engineering of Autonomous Systems, THI

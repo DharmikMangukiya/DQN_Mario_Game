@@ -2,14 +2,17 @@ import sys
 import pygame
 import numpy as np
 import gymnasium as gym
+import os
+
+ASSET_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "Photos")
 
 # Step 0: Import images for the environment
 # -------
 # Paths to your images
-agent_img_path = r'Photos\Mario.png'
-goal_img_path = r"Photos\Goal.png"
-hell_img_path = r'Photos\Bomb.png'
-food_img_path = r'Photos\Food.png'
+agent_img_path = os.path.join(ASSET_DIR, "Mario.png")
+goal_img_path = os.path.join(ASSET_DIR, "Goal.png")
+hell_img_path = os.path.join(ASSET_DIR, "Bomb.png")
+food_img_path = os.path.join(ASSET_DIR, "food.png")
 
 # Step 1: Define your own custom environment
 # -------
